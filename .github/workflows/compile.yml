@@ -1,4 +1,4 @@
-name: Build ESP32-C6 Firmware
+name: Build Simple Blink Firmware
 
 on:
   push:
