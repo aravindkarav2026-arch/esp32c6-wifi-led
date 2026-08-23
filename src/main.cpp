@@ -1,49 +1,63 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <Adafruit_NeoPixel.h>
 
-// Replace with your Wi-Fi credentials
-const char* ssid = "AKB -4G";
-const char* password = "ar20232023";
+const char* ssid = "YOUR_WIFI_NAME";
+const char* password = "YOUR_WIFI_PASSWORD";
 
-// Onboard LED pin for standard ESP32-C6 boards
-const int LED_PIN = 8; 
+// Waveshare ESP32-C6 onboard RGB LED is on GPIO 8
+#define RGB_PIN 8
+#define NUM_PIXELS 1
+
+Adafruit_NeoPixel rgb(NUM_PIXELS, RGB_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   Serial.begin(115200);
 
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW); // Start with LED OFF
+  rgb.begin();
+  rgb.setBrightness(30); // Set low brightness (0-255) to avoid harsh light
+  rgb.clear();
+  rgb.show();
 
-  Serial.print("Connecting to Wi-Fi");
   WiFi.begin(ssid, password);
-  
-  // Blink LED every 250ms while attempting to connect
+  Serial.print("Connecting to Wi-Fi");
+
+  // Blink BLUE while connecting to Wi-Fi
   while (WiFi.status() != WL_CONNECTED) {
-    digitalWrite(LED_PIN, HIGH);
+    rgb.setPixelColor(0, rgb.Color(0, 0, 255)); // Blue ON
+    rgb.show();
     delay(250);
-    digitalWrite(LED_PIN, LOW);
+
+    rgb.setPixelColor(0, rgb.Color(0, 0, 0));   // OFF
+    rgb.show();
     delay(250);
+
     Serial.print(".");
   }
 
-  // Keep LED solid ON once connected
-  digitalWrite(LED_PIN, HIGH); 
-  
+  // Solid GREEN once Wi-Fi is connected
+  rgb.setPixelColor(0, rgb.Color(0, 255, 0)); // Green ON
+  rgb.show();
+
   Serial.println("\nConnected to Wi-Fi!");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 }
 
 void loop() {
-  // Monitor connection status continuously
-  if (WiFi.status() == WL_CONNECTED) {
-    digitalWrite(LED_PIN, HIGH); 
-  } else {
-    // Rapid alert flashing if Wi-Fi drops
-    digitalWrite(LED_PIN, HIGH);
+  if (WiFi.status() != WL_CONNECTED) {
+    // Flash RED if Wi-Fi disconnects
+    rgb.setPixelColor(0, rgb.Color(255, 0, 0)); // Red
+    rgb.show();
     delay(100);
-    digitalWrite(LED_PIN, LOW);
+    rgb.setPixelColor(0, rgb.Color(0, 0, 0));
+    rgb.show();
     delay(100);
     WiFi.reconnect();
+  } else {
+    // Keep solid GREEN when healthy
+    rgb.setPixelColor(0, rgb.Color(0, 255, 0));
+    rgb.show();
+    delay(1000);
   }
 }
