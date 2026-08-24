@@ -1,44 +1,46 @@
-#define BLYNK_TEMPLATE_ID "TMPL3pekN51Kj"
-#define BLYNK_TEMPLATE_NAME "Watertanklevel"
-#define BLYNK_AUTH_TOKEN "mGUWTvi_KRqoiftj8BK8YnMPn2A_9QoE"
-
 #include <Arduino.h>
-#include <WiFi.h>
-#include <BlynkSimpleEsp32.h>
+#include <Wire.h>
+#include <U8g2lib.h>
 
-#define RGB_PIN 8
+#define SDA_PIN 6
+#define SCL_PIN 7
 
-// Replace with your Wi-Fi credentials
-char ssid[] = "AKB -4G";
-char pass[] = "ar20232023";
-
-// Receives RGB values from Blynk app / Dashboard widget assigned to V0
-BLYNK_WRITE(V0) {
-  int r = param[0].asInt();
-  int g = param[1].asInt();
-  int b = param[2].asInt();
-
-  neopixelWrite(RGB_PIN, r, g, b);
-  Serial.printf("Blynk RGB Updated -> R: %d, G: %d, B: %d\n", r, g, b);
-}
+// Standard 1.3" I2C SH1106 constructor
+U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ SCL_PIN, /* data=*/ SDA_PIN);
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  delay(2000);
 
-  Serial.println("\n=================================");
-  Serial.println(" ESP32-C6 BLYNK CONNECT START ");
-  Serial.println("=================================");
+  Serial.println("\n--- Starting I2C Scan on GPIO 6 (SDA) & GPIO 7 (SCL) ---");
+  Wire.begin(SDA_PIN, SCL_PIN);
 
-  // Connects to Wi-Fi and Blynk Cloud
-  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+  byte error, address;
+  int nDevices = 0;
 
-  // Quick green flash to signal online status
-  neopixelWrite(RGB_PIN, 0, 255, 0);
-  delay(500);
-  neopixelWrite(RGB_PIN, 0, 0, 0);
+  for (address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+
+    if (error == 0) {
+      Serial.printf("I2C device found at address 0x%02X\n", address);
+      nDevices++;
+    }
+  }
+
+  if (nDevices == 0) {
+    Serial.println("No I2C devices found! Check wiring, power, and solder joints.");
+  } else {
+    Serial.println("I2C Scan Complete. Initializing Display...");
+    u8g2.begin();
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_ncenB14_tr);
+    u8g2.drawStr(10, 35, "WORKING!");
+    u8g2.sendBuffer();
+    Serial.println("Display draw command sent.");
+  }
 }
 
 void loop() {
-  Blynk.run();
+  // Nothing here
 }
